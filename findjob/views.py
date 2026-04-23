@@ -143,13 +143,16 @@ def company_login(request):
 
 
 from django.db.models import Q
+from django.shortcuts import render
 from deep_translator import GoogleTranslator
+from .models import Job
 
 def translate_to_english(text):
-    if not text or text == 'Unknown':
+    if not text or text.lower() == 'unknown':
         return ''
     try:
-        return GoogleTranslator(source='auto', target='en').translate(text).strip()
+        translated = GoogleTranslator(source='auto', target='en').translate(text).strip()
+        return '' if translated.lower() == 'unknown' else translated
     except:
         return text.strip()
 
@@ -158,32 +161,40 @@ def user_dashboard(request):
     city_raw = request.GET.get('city', '').strip()
     district_raw = request.GET.get('district', '').strip()
 
-    # Hindi to English conversion
+    # Translate Hindi to English (if needed)
     city_en = translate_to_english(city_raw)
     district_en = translate_to_english(district_raw)
 
+    # Base queryset: active jobs
     jobs = Job.objects.filter(is_active=True)
+
+    # Category filter
     if selected_category:
         jobs = jobs.filter(category__iexact=selected_category)
 
-    # Filter using English version
-    loc_filter = Q()
+    # Location filter: city OR district (English translated) against job.location field
+    location_filter = Q()
     if city_en:
-        loc_filter |= Q(location__icontains=city_en)
+        location_filter |= Q(location__icontains=city_en)
     if district_en:
-        loc_filter |= Q(location__icontains=district_en)
-    if loc_filter:
-        jobs = jobs.filter(loc_filter)
+        location_filter |= Q(location__icontains=district_en)
+    if location_filter:
+        jobs = jobs.filter(location_filter)
 
-    categories = Job.objects.filter(is_active=True).values_list('category', flat=True).distinct().exclude(category='')
+    # Get distinct categories for dropdown
+    categories = (Job.objects.filter(is_active=True)
+                  .values_list('category', flat=True)
+                  .distinct()
+                  .exclude(category__isnull=True)
+                  .exclude(category=''))
 
     context = {
         'jobs': jobs,
         'categories': categories,
         'selected_category': selected_category,
-        'city_display': city_en,      # English for display & hidden input
+        'city_display': city_en,
         'district_display': district_en,
-        'city_raw': city_raw,          # original (if needed)
+        'city_raw': city_raw,
         'district_raw': district_raw,
     }
     return render(request, 'user_dashboard.html', context)

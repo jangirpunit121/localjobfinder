@@ -3,156 +3,106 @@
 
 {% block extra_js %}
 <script>
-    // Check if URL already has location parameters (city or district with non-empty value)
-    function hasLocationInURL() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const city = urlParams.get('city');
-        const district = urlParams.get('district');
-        return (city && city.trim() !== '') || (district && district.trim() !== '');
-    }
-
     async function getLocationAndSetCityDistrict() {
-        // Agar URL me already location hai to kuch mat karo
-        if (hasLocationInURL()) {
-            console.log("Location already in URL, skipping geolocation");
-            return;
-        }
-
         if (!navigator.geolocation) {
-            document.getElementById("location-status").innerHTML = "Geolocation not supported.";
+            alert("Geolocation not supported");
             return;
         }
-
-        document.getElementById("location-status").innerHTML = "Getting your location...";
-        
-        navigator.geolocation.getCurrentPosition(
-            async function(position) {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-
-                try {
-                    const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
-                        { headers: { 'User-Agent': 'JobFinder/1.0' } }
-                    );
-                    const data = await response.json();
-                    
-                    let city = "";
-                    let district = "";
-                    
-                    if (data.address) {
-                        city = data.address.city || 
-                               data.address.town || 
-                               data.address.village || 
-                               data.address.suburb || 
-                               data.address.municipality ||
-                               "";
-                        
-                        district = data.address.state_district || 
-                                   data.address.county || 
-                                   "";
-                    }
-                    
-                    // Remove "Unknown" ya empty
-                    if (city === "Unknown" || city === "") city = "";
-                    if (district === "Unknown" || district === "") district = "";
-                    
-                    // Agar dono empty hain to kuch mat karo
-                    if (!city && !district) {
-                        document.getElementById("location-status").innerHTML = "Could not detect city/district. Please enter manually.";
-                        return;
-                    }
-                    
-                    // Set hidden fields
-                    document.getElementById("id_city").value = city;
-                    document.getElementById("id_district").value = district;
-                    
-                    document.getElementById("location-status").innerHTML = 
-                        `📍 City: ${city || "—"}, District: ${district || "—"}`;
-                    
-                    // ONLY SUBMIT IF WE HAVE VALID LOCATION AND URL DOESN'T ALREADY HAVE IT
-                    if (!hasLocationInURL()) {
-                        document.getElementById("filter-form").submit();
-                    }
-                    
-                } catch (error) {
-                    console.error("Reverse geocoding error:", error);
-                    document.getElementById("location-status").innerHTML = 
-                        "Error getting address. Please refresh and allow location again.";
+        document.getElementById("location-status").innerHTML = "Getting location...";
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            try {
+                const resp = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+                    { headers: { 'User-Agent': 'JobFinder/1.0' } }
+                );
+                const data = await resp.json();
+                let city = "", district = "";
+                if (data.address) {
+                    city = data.address.city || data.address.town || data.address.village || "";
+                    district = data.address.state_district || data.address.county || "";
                 }
-            },
-            function(error) {
-                let msg = "Location access denied. Please allow or enter manually.";
-                document.getElementById("location-status").innerHTML = msg;
+                if (city === "Unknown") city = "";
+                if (district === "Unknown") district = "";
+                document.getElementById("id_city_input").value = city;
+                document.getElementById("id_district_input").value = district;
+                document.getElementById("location-status").innerHTML = `📍 Detected: City: ${city || "—"}, District: ${district || "—"}`;
+                document.getElementById("filter-form").submit();
+            } catch(e) {
+                document.getElementById("location-status").innerHTML = "Error getting location";
             }
-        );
+        }, () => {
+            document.getElementById("location-status").innerHTML = "Location denied. Enter manually.";
+        });
     }
 
-    window.addEventListener('DOMContentLoaded', function() {
-        const cityField = document.getElementById("id_city");
-        const cityValue = cityField ? cityField.value.trim() : "";
-        
-        // Agar hidden field me valid city/district hai to sirf display karo
-        if (cityValue && cityValue !== "" && cityValue !== "Unknown") {
-            const districtField = document.getElementById("id_district");
-            const districtValue = districtField ? districtField.value.trim() : "";
-            document.getElementById("location-status").innerHTML = 
-                `📍 City: ${cityValue}, District: ${districtValue || "—"}`;
-            return;
-        }
-        
-        // Agar URL me location nahi hai aur hidden field empty hai to location lo
-        if (!hasLocationInURL()) {
-            getLocationAndSetCityDistrict();
-        } else {
-            document.getElementById("location-status").innerHTML = "Location set via URL.";
-        }
+    window.addEventListener('DOMContentLoaded', () => {
+        // If URL has city/district, fill inputs
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlCity = urlParams.get('city') || '';
+        const urlDistrict = urlParams.get('district') || '';
+        if (urlCity) document.getElementById("id_city_input").value = urlCity;
+        if (urlDistrict) document.getElementById("id_district_input").value = urlDistrict;
     });
 </script>
 {% endblock %}
 
 {% block content %}
-<div class="alert alert-info">
-    <strong>📍 Your Location:</strong>
+<div class="alert alert-info d-flex justify-content-between align-items-center">
     <span id="location-status">
         {% if city_display %}
-            City: {{ city_display }}, District: {{ district_display|default:"—" }}
+            📍 City: {{ city_display }}, District: {{ district_display|default:"—" }}
         {% else %}
-            Detecting or enter manually...
+            📍 Enter location below or use geolocation
         {% endif %}
     </span>
-    <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="getLocationAndSetCityDistrict()">
-        🔄 Refresh Location
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="getLocationAndSetCityDistrict()">
+        📍 Get Current Location
     </button>
 </div>
 
 <div class="row">
     <div class="col-md-3">
-        <div class="card mb-4">
-            <div class="card-header">Filter Jobs</div>
+        <div class="card">
+            <div class="card-header">🔍 Filter Jobs</div>
             <div class="card-body">
-                <form method="get" action="" id="filter-form">
-                    <select name="category" class="form-select" onchange="this.form.submit()">
-                        <option value="">All Categories</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
-                        {% endfor %}
-                    </select>
-                    
-                    <!-- Hidden fields - value will be set by JS or from Django (English version) -->
-                    <input type="hidden" name="city" id="id_city" value="{{ city_display|default:'' }}">
-                    <input type="hidden" name="district" id="id_district" value="{{ district_display|default:'' }}">
+                <form method="get" id="filter-form">
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">City (Hindi/English)</label>
+                        <input type="text" name="city" id="id_city_input" class="form-control"
+                               placeholder="e.g., Mumbai, मुंबई, Delhi, दिल्ली"
+                               value="{{ city_display|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">District / State</label>
+                        <input type="text" name="district" id="id_district_input" class="form-control"
+                               placeholder="e.g., Thane, Gurugram"
+                               value="{{ district_display|default:'' }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Search Jobs</button>
                 </form>
             </div>
         </div>
     </div>
 
     <div class="col-md-9">
-        <h3>Jobs near 
+        <h3>Jobs in 
             {% if city_display %}
                 {{ city_display }}
+            {% elif district_display %}
+                {{ district_display }}
             {% else %}
-                your location
+                your chosen location
             {% endif %}
         </h3>
         <div class="row">
@@ -160,18 +110,16 @@
                 <div class="col-md-6 mb-3">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title">{{ job.title }}</h5>
-                            <p class="card-text">
-                                <i class="fas fa-building"></i> {{ job.company.name }}<br>
-                                <i class="fas fa-map-marker-alt"></i> {{ job.location }}<br>
-                                <i class="fas fa-tag"></i> {{ job.category }}
-                            </p>
-                            <a href="{% url 'job_detail' job.id %}" class="btn btn-primary">View Details</a>
+                            <h5>{{ job.title }}</h5>
+                            <p><i class="fas fa-building"></i> {{ job.company.name }}<br>
+                               <i class="fas fa-map-marker-alt"></i> {{ job.location }}<br>
+                               <i class="fas fa-tag"></i> {{ job.category }}</p>
+                            <a href="{% url 'job_detail' job.id %}" class="btn btn-sm btn-primary">View Details</a>
                         </div>
                     </div>
                 </div>
             {% empty %}
-                <div class="alert alert-warning">No jobs found in your area. Try updating location or selecting a category.</div>
+                <div class="alert alert-warning">No jobs found for this location/category. Try different keywords.</div>
             {% endfor %}
         </div>
     </div>
