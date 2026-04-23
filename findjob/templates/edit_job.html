@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Job - {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">Edit Job</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Job Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Job Title *</label>
+                        <input type="text" name="title" id="title" class="form-control" value="{{ job.title }}" required>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Job Description *</label>
+                        <textarea name="description" id="description" rows="6" class="form-control" required>{{ job.description }}</textarea>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location *</label>
+                        <input type="text" name="location" id="location" class="form-control" value="{{ job.location }}" required>
+                    </div>
+
+                    <!-- Salary -->
+                    <div class="mb-3">
+                        <label for="salary" class="form-label">Salary</label>
+                        <input type="text" name="salary" id="salary" class="form-control" value="{{ job.salary|default:'' }}">
+                        <small class="text-muted">e.g., ₹20,000 - ₹30,000 per month</small>
+                    </div>
+
+                    <!-- Job Type -->
+                    <div class="mb-3">
+                        <label for="job_type" class="form-label">Job Type *</label>
+                        <select name="job_type" id="job_type" class="form-select" required>
+                            <option value="full_time" {% if job.job_type == 'full_time' %}selected{% endif %}>Full Time</option>
+                            <option value="part_time" {% if job.job_type == 'part_time' %}selected{% endif %}>Part Time</option>
+                            <option value="internship" {% if job.job_type == 'internship' %}selected{% endif %}>Internship</option>
+                        </select>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category *</label>
+                        <input type="text" name="category" id="category" class="form-control" value="{{ job.category }}" required>
+                        <small class="text-muted">e.g., Customer Support, Python Developer, Marketing</small>
+                    </div>
+
+                    <!-- Company (only for admin/superuser) -->
+                    {% if user.is_superuser %}
+                    <div class="mb-3">
+                        <label for="company" class="form-label">Company</label>
+                        <select name="company_id" id="company" class="form-select">
+                            {% for company in companies %}
+                                <option value="{{ company.id }}" {% if job.company.id == company.id %}selected{% endif %}>{{ company.company_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <!-- Skills Required (optional, if you added this field) -->
+                    {% if job.skills_required %}
+                    <div class="mb-3">
+                        <label for="skills_required" class="form-label">Required Skills (one per line)</label>
+                        <textarea name="skills_required" id="skills_required" rows="3" class="form-control">{{ job.skills_required }}</textarea>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <a href="{% url 'company-dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <a href="# " class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this job?');">
+                            <i class="fas fa-trash-alt"></i> Delete Job
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

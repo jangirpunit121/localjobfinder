@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Edit Profile ({{ user_type|title }})</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <h5 class="mb-3">Account Information</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" name="username" id="username" class="form-control" value="{{ user.username }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" name="email" id="email" class="form-control" value="{{ user.email }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mobile_number" class="form-label">Mobile Number</label>
+                        <input type="text" name="mobile_number" id="mobile_number" class="form-control" value="{{ user.mobile_number }}">
+                    </div>
+
+                    <hr>
+                    
+                    {% if user_type == 'company' %}
+                        <h5 class="mb-3">Company Details</h5>
+                        <div class="mb-3">
+                            <label for="company_name" class="form-label">Company Name</label>
+                            <input type="text" name="company_name" id="company_name" class="form-control" value="{{ profile.company_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Company Location</label>
+                            <input type="text" name="location" id="location" class="form-control" value="{{ profile.location }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="website" class="form-label">Website</label>
+                            <input type="url" name="website" id="website" class="form-control" value="{{ profile.website }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="contact_number" class="form-label">Contact Number (HR/WhatsApp)</label>
+                            <input type="text" name="contact_number" id="contact_number" class="form-control" value="{{ profile.contact_number }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Company Description</label>
+                            <textarea name="description" id="description" rows="4" class="form-control">{{ profile.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">Company Logo</label>
+                            {% if profile.logo %}
+                                <div class="mb-2">
+                                    <img src="{{ profile.logo.url }}" alt="Current Logo" style="max-height: 80px;">
+                                    <p class="small text-muted">Current logo</p>
+                                </div>
+                            {% endif %}
+                            <input type="file" name="logo" id="logo" class="form-control" accept="image/*">
+                            <small class="text-muted">Leave empty to keep current logo</small>
+                        </div>
+                    
+                    {% elif user_type == 'candidate' %}
+                        <h5 class="mb-3">Candidate Details</h5>
+                        <div class="mb-3">
+                            <label for="skills" class="form-label">Skills (comma separated)</label>
+                            <input type="text" name="skills" id="skills" class="form-control" value="{{ profile.skills }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="experience" class="form-label">Experience (years)</label>
+                            <input type="number" name="experience" id="experience" class="form-control" value="{{ profile.experience }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Current Location</label>
+                            <input type="text" name="location" id="location" class="form-control" value="{{ profile.location }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="qualification" class="form-label">Highest Qualification</label>
+                            <input type="text" name="qualification" id="qualification" class="form-control" value="{{ profile.qualification }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="resume" class="form-label">Resume (PDF/DOC)</label>
+                            {% if profile.resume %}
+                                <p class="small text-muted">Current: <a href="{{ profile.resume.url }}" target="_blank">View Resume</a></p>
+                            {% endif %}
+                            <input type="file" name="resume" id="resume" class="form-control" accept=".pdf,.doc,.docx">
+                            <small class="text-muted">Leave empty to keep current resume</small>
+                        </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

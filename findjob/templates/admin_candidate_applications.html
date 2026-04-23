@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Candidate Applications - {{ candidate.user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+    }
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f1f9ff;
+        cursor: pointer;
+    }
+    .filter-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        transition: transform 0.2s;
+    }
+    .filter-card:hover {
+        transform: translateY(-3px);
+    }
+    .btn-sm-custom {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="page-header d-flex flex-wrap justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="fas fa-user-circle"></i> {{ candidate.user.get_full_name|default:candidate.user.username }}
+            </h1>
+            <p class="mb-0">
+                <i class="fas fa-envelope"></i> {{ candidate.user.email }} &nbsp;|&nbsp;
+                <i class="fas fa-phone"></i> {{ candidate.user.mobile_number|default:"-" }}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'candidate-detail' candidate.id %}" class="btn btn-light">
+                <i class="fas fa-arrow-left"></i> Back to Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Stats Row -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card filter-card text-center p-2">
+                <h4 class="text-primary">{{ applications|length }}</h4>
+                <p class="mb-0">Total Applications</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card filter-card text-center p-2">
+                <h4 class="text-warning" id="pendingCount">{{ pending_count }}</h4>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card filter-card text-center p-2">
+                <h4 class="text-success" id="acceptedCount">{{ accepted_count }}</h4>
+                <p class="mb-0">Accepted</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card filter-card text-center p-2">
+                <h4 class="text-danger" id="rejectedCount">{{ rejected_count }}</h4>
+                <p class="mb-0">Rejected</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <button class="btn btn-outline-secondary filter-btn active" data-status="all">All</button>
+            <button class="btn btn-outline-warning filter-btn" data-status="pending">Pending</button>
+            <button class="btn btn-outline-success filter-btn" data-status="accepted">Accepted</button>
+            <button class="btn btn-outline-danger filter-btn" data-status="rejected">Rejected</button>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="applicationsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Job Title</th>
+                            <th>Company</th>
+                            <th>Applied On</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                        <tr class="application-row" data-status="{{ app.status }}" data-app-id="{{ app.id }}">
+                            <td>
+                                <strong>{{ app.job.title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ app.job.location }}</small>
+                            </td>
+                            <td>{{ app.job.company.company_name }}</td>
+                            <td>{{ app.applied_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <span class="badge status-badge 
+                                    {% if app.status == 'pending' %}bg-warning text-dark
+                                    {% elif app.status == 'accepted' %}bg-success
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ app.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <!-- Status Update Dropdown -->
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-edit"></i> Update
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item update-status" data-status="pending" href="#">Pending</a></li>
+                                        <li><a class="dropdown-item update-status" data-status="accepted" href="#">Accepted</a></li>
+                                        <li><a class="dropdown-item update-status" data-status="rejected" href="#">Rejected</a></li>
+                                    </ul>
+                                </div>
+                                <!-- View Job Link (optional) -->
+                                <a href="{% url 'job_detail' app.job.id %}" class="btn btn-sm btn-outline-info ms-1" target="_blank">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                                No applications found for this candidate.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ---------- FILTER FUNCTIONALITY ----------
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const rows = document.querySelectorAll('.application-row');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const status = this.getAttribute('data-status');
+                filterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                rows.forEach(row => {
+                    if (status === 'all' || row.getAttribute('data-status') === status) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // ---------- STATUS UPDATE VIA AJAX ----------
+        const updateLinks = document.querySelectorAll('.update-status');
+        
+        updateLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const newStatus = this.getAttribute('data-status');
+                const row = this.closest('tr');
+                const appId = row.getAttribute('data-app-id');
+                const statusBadge = row.querySelector('.status-badge');
+                
+                if (confirm(`Change application status to ${newStatus.toUpperCase()}?`)) {
+                    fetch(`/application/${appId}/update-status/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update badge appearance
+                            let badgeClass = '';
+                            if (newStatus === 'pending') {
+                                badgeClass = 'bg-warning text-dark';
+                            } else if (newStatus === 'accepted') {
+                                badgeClass = 'bg-success';
+                            } else {
+                                badgeClass = 'bg-danger';
+                            }
+                            statusBadge.className = `badge status-badge ${badgeClass}`;
+                            statusBadge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                            
+                            // Update row data-status attribute
+                            row.setAttribute('data-status', newStatus);
+                            
+                            // Update filter counts (optional, but good UX)
+                            updateCounts();
+                            
+                            // Show success message
+                            showToast('Status updated successfully!', 'success');
+                        } else {
+                            showToast('Error: ' + data.error, 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Something went wrong. Please try again.', 'danger');
+                    });
+                }
+            });
+        });
+
+        // Helper: Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Helper: Update stat cards counts dynamically
+        function updateCounts() {
+            let pending = 0, accepted = 0, rejected = 0;
+            document.querySelectorAll('.application-row').forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (status === 'pending') pending++;
+                else if (status === 'accepted') accepted++;
+                else if (status === 'rejected') rejected++;
+            });
+            const total = pending + accepted + rejected;
+            document.querySelector('.text-primary').innerText = total;
+            document.getElementById('pendingCount').innerText = pending;
+            document.getElementById('acceptedCount').innerText = accepted;
+            document.getElementById('rejectedCount').innerText = rejected;
+        }
+
+        // Helper: Show temporary toast message (simple alert fallback)
+        function showToast(message, type) {
+            // You can replace this with a nice toast library if available
+            alert(message);
+        }
+    });
+</script>
+{% endblock %}

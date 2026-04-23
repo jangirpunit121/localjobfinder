@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Candidate Details - {{ candidate.user.get_full_name|default:candidate.user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .info-card {
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border: none;
+    }
+    .info-card .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: bold;
+    }
+    .badge-custom {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        border-radius: 30px;
+    }
+    .back-btn {
+        border-radius: 30px;
+        padding: 8px 25px;
+    }
+    .skill-badge {
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 0.4rem 1rem;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        margin: 0.2rem;
+        display: inline-block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="{% url 'company-dashboard' %}" class="btn btn-outline-secondary back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                <i class="fas fa-user-circle fa-5x"></i>
+            </div>
+            <div class="col-md-10">
+                <h1 class="display-6">{{ candidate.user.get_full_name|default:candidate.user.username }}</h1>
+                <p class="lead mb-0">
+                    <i class="fas fa-envelope"></i> {{ candidate.user.email }} &nbsp;|&nbsp;
+                    <i class="fas fa-phone"></i> {{ candidate.user.mobile_number|default:"Not provided" }}
+                </p>
+                <p class="mt-2">
+                    <i class="fas fa-calendar-alt"></i> Joined: {{ candidate.user.date_joined|date:"F d, Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Personal Info -->
+        <div class="col-lg-4">
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="fas fa-id-card"></i> Personal Information
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-3"><strong>Full Name:</strong><br> {{ candidate.user.first_name }} {{ candidate.user.last_name }}</li>
+                        <li class="mb-3"><strong>Email:</strong><br> {{ candidate.user.email }}</li>
+                        <li class="mb-3"><strong>Mobile:</strong><br> {{ candidate.user.mobile_number|default:"-" }}</li>
+                        <li class="mb-3"><strong>Date of Birth:</strong><br> {{ candidate.date_of_birth|default:"-" }}</li>
+                        <li class="mb-3"><strong>Gender:</strong><br> {{ candidate.gender|default:"-"|title }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="fas fa-map-marker-alt"></i> Address
+                </div>
+                <div class="card-body">
+                    <p>{{ candidate.address|default:"Not provided"|linebreaksbr }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Professional Info -->
+        <div class="col-lg-8">
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="fas fa-graduation-cap"></i> Education
+                </div>
+                <div class="card-body">
+                    {% if candidate.education %}
+                        {{ candidate.education|linebreaks }}
+                    {% else %}
+                        <p class="text-muted">No education details provided.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="fas fa-briefcase"></i> Work Experience
+                </div>
+                <div class="card-body">
+                    {% if candidate.experience %}
+                        {{ candidate.experience|linebreaks }}
+                    {% else %}
+                        <p class="text-muted">No work experience provided.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="fas fa-tools"></i> Skills
+                </div>
+                <div class="card-body">
+                    {% if candidate.skills %}
+                        {% for skill in candidate.skills.split|slice:":20" %}
+                            <span class="skill-badge">{{ skill|capfirst }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No skills listed.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="fas fa-file-alt"></i> Resume / CV
+                </div>
+                <div class="card-body">
+                    {% if candidate.resume %}
+                        <a href="{{ candidate.resume.url }}" class="btn btn-success" target="_blank">
+                            <i class="fas fa-download"></i> Download Resume
+                        </a>
+                    {% else %}
+                        <p class="text-muted">No resume uploaded.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Summary Card -->
+    <div class="card info-card mt-3">
+        <div class="card-header">
+            <i class="fas fa-chart-line"></i> Application Summary
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <h3>{{ total_applications }}</h3>
+                    <p>Total Applications</p>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="text-warning">{{ pending_applications }}</h3>
+                    <p>Pending</p>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="text-success">{{ accepted_applications }}</h3>
+                    <p>Accepted</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a href="#" class="btn btn-primary">
+                    <i class="fas fa-list"></i> View All Applications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

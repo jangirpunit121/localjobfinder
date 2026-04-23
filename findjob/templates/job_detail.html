@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ job.title }} - {{ job.company.company_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .company-logo {
+        max-height: 80px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    .job-detail-card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .job-detail-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 35px -10px rgba(0,0,0,0.15);
+    }
+    .detail-section {
+        background-color: #f8f9fa;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .apply-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        padding: 12px 30px;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    .apply-btn:hover {
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+    }
+    .contact-btn {
+        transition: all 0.2s;
+    }
+    .contact-btn:hover {
+        transform: translateY(-2px);
+    }
+    .cover-letter-textarea {
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        transition: all 0.2s;
+    }
+    .cover-letter-textarea:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40,167,69,0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Main Job Card -->
+            <div class="card job-detail-card shadow-sm mb-4">
+                <!-- Header with logo and company info -->
+                <div class="card-header bg-white border-0 pt-4 pb-0">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if job.company.logo and job.company.logo.url %}
+                                <img src="{{ job.company.logo.url }}" alt="{{ job.company.company_name }} logo" class="company-logo me-3 rounded border p-1" style="width: 70px; height: 70px;">
+                            {% else %}
+                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 70px; height: 70px;">
+                                    <i class="fas fa-building fa-2x"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h2 class="mb-1">{{ job.title }}</h2>
+                                <h5 class="text-muted">{{ job.company.company_name }}</h5>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge bg-primary fs-6 px-3 py-2">{{ job.job_type|title }}</span>
+                            <span class="badge bg-secondary fs-6 px-3 py-2 ms-1">{{ job.category }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Quick Info Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="detail-section text-center h-100">
+                                <i class="fas fa-map-marker-alt fa-2x text-danger mb-2"></i>
+                                <h6 class="mb-1">Location</h6>
+                                <p class="mb-0">{{ job.location }}</p>
+                                <a href="https://maps.google.com/?q={{ job.location|urlencode }}" target="_blank" class="small">View on map →</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="detail-section text-center h-100">
+                                <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
+                                <h6 class="mb-1">Salary</h6>
+                                <p class="mb-0">{{ job.salary|default:"Not disclosed" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="detail-section text-center h-100">
+                                <i class="fas fa-calendar-alt fa-2x text-info mb-2"></i>
+                                <h6 class="mb-1">Posted On</h6>
+                                <p class="mb-0">{{ job.created_at|date:"F d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="detail-section">
+                        <h5><i class="fas fa-file-alt me-2"></i> Job Description</h5>
+                        <p>{{ job.description|linebreaks }}</p>
+                    </div>
+
+                    <!-- Required Skills (if you add a field 'skills_required' in Job model) -->
+                    {% if job.skills_required %}
+                    <div class="detail-section">
+                        <h5><i class="fas fa-code me-2"></i> Required Skills</h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for skill in job.skills_required.splitlines %}
+                                <span class="badge bg-dark fs-6 p-2">{{ skill }}</span>
+                            {% empty %}
+                                <span class="badge bg-secondary">{{ job.skills_required }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Fallback: show skills from description hint -->
+                    <div class="detail-section">
+                        <h5><i class="fas fa-code me-2"></i> Skills Required</h5>
+                        <p>Check job description above for required skills.</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Company Details -->
+                    <div class="detail-section">
+                        <h5><i class="fas fa-building me-2"></i> Company Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>🏢 Company:</strong> {{ job.company.company_name }}</p>
+                                <p><strong>📍 Office Location:</strong> {{ job.company.location }}</p>
+                                {% if job.company.website %}
+                                <p><strong>🌐 Website:</strong> <a href="{{ job.company.website }}" target="_blank">{{ job.company.website }}</a></p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if job.company.hr_name %}
+                                <p><strong>👤 HR Name:</strong> {{ job.company.hr_name }}</p>
+                                {% else %}
+                                <p><strong>👤 Contact Person:</strong> HR Team</p>
+                                {% endif %}
+                                <p><strong>📞 Contact Number:</strong> {{ job.company.contact_number|default:"Not provided" }}</p>
+                                {% if job.company.description %}
+                                <p><strong>ℹ️ About Company:</strong> {{ job.company.description|truncatewords:20 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons - FIXED APPLY FORM -->
+                <div class="card-footer bg-white border-0 pb-4 pt-0">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                        <!-- Apply Now Form with Cover Letter -->
+                        <form method="post" action="{% url 'apply_job' job.id %}" class="flex-grow-1" style="min-width: 250px;">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="cover_letter" class="form-label">Cover Letter (Optional)</label>
+                                <textarea name="cover_letter" id="cover_letter" rows="2" class="form-control cover-letter-textarea" placeholder="Why are you interested in this position?"></textarea>
+                            </div>
+                            <button type="submit" class="btn apply-btn text-white w-100">
+                                <i class="fas fa-paper-plane me-2"></i> Apply Now
+                            </button>
+                        </form>
+                        <!-- Contact Buttons -->
+                        <div class="btn-group-vertical btn-group-lg" role="group">
+                            <a href="tel:{{ job.company.contact_number }}" class="btn btn-outline-primary contact-btn mb-2">
+                                <i class="fas fa-phone-alt me-1"></i> Call HR
+                            </a>
+                            <a href="https://wa.me/{{ job.company.contact_number }}?text=Hello%2C%20I%20am%20interested%20in%20the%20{{ job.title|urlencode }}%20position%20at%20{{ job.company.company_name|urlencode }}" 
+                               target="_blank" class="btn btn-outline-success contact-btn mb-2">
+                                <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                            </a>
+                            {% if job.company.website %}
+                            <a href="{{ job.company.website }}" target="_blank" class="btn btn-outline-secondary contact-btn">
+                                <i class="fas fa-globe me-1"></i> Website
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="text-center">
+                <a href="{% url 'user-dashboard' %}" class="btn btn-link text-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
