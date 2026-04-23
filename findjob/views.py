@@ -143,40 +143,48 @@ def company_login(request):
 
 
 from django.db.models import Q
+from deep_translator import GoogleTranslator
+
+def translate_to_english(text):
+    if not text or text == 'Unknown':
+        return ''
+    try:
+        return GoogleTranslator(source='auto', target='en').translate(text).strip()
+    except:
+        return text.strip()
 
 def user_dashboard(request):
-    # 1. GET parameters lo
     selected_category = request.GET.get('category', '')
-    city = request.GET.get('city', '').strip()
-    district = request.GET.get('district', '').strip()
-    
-    # 2. Base queryset (active jobs only, maan lo)
-    jobs = Job.objects.filter(is_active=True)  # agar active flag hai to
-    
-    # 3. Category filter
+    city_raw = request.GET.get('city', '').strip()
+    district_raw = request.GET.get('district', '').strip()
+
+    # Hindi to English conversion
+    city_en = translate_to_english(city_raw)
+    district_en = translate_to_english(district_raw)
+
+    jobs = Job.objects.filter(is_active=True)
     if selected_category:
         jobs = jobs.filter(category__iexact=selected_category)
-    
-    # 4. Location filter: city AUR district dono se (OR condition)
-    # Jab city ho ya district ho, to location field mein se koi match kare
-    location_filters = Q()
-    if city and city != 'Unknown':
-        location_filters |= Q(location__icontains=city)
-    if district and district != 'Unknown':
-        location_filters |= Q(location__icontains=district)
-    
-    if location_filters:  # agar koi bhi location filter hai to apply karo
-        jobs = jobs.filter(location_filters)
-    
-    # 5. Categories list (distinct, not empty)
-    categories = Job.objects.filter(is_active=True).values_list('category', flat=True).distinct().exclude(category__isnull=True).exclude(category='')
-    
+
+    # Filter using English version
+    loc_filter = Q()
+    if city_en:
+        loc_filter |= Q(location__icontains=city_en)
+    if district_en:
+        loc_filter |= Q(location__icontains=district_en)
+    if loc_filter:
+        jobs = jobs.filter(loc_filter)
+
+    categories = Job.objects.filter(is_active=True).values_list('category', flat=True).distinct().exclude(category='')
+
     context = {
         'jobs': jobs,
         'categories': categories,
         'selected_category': selected_category,
-        'city': city,
-        'district': district,
+        'city_display': city_en,      # English for display & hidden input
+        'district_display': district_en,
+        'city_raw': city_raw,          # original (if needed)
+        'district_raw': district_raw,
     }
     return render(request, 'user_dashboard.html', context)
 
